@@ -12,6 +12,7 @@ replace (
 require (
 	github.com/AlekSi/pointer v1.1.0
 	github.com/Masterminds/semver v1.5.0
+	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
 	github.com/aws/aws-sdk-go v1.29.32
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/caddyserver/caddy v1.0.5
@@ -22,7 +23,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.2
 	github.com/dexidp/dex v0.0.0-20200408064242-83d8853fd969
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017
+	github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017 // indirect
 	github.com/docker/compose-on-kubernetes v0.4.24 // indirect
 	github.com/docker/distribution v2.7.2-0.20200708230840-70e0022e42fd+incompatible
 	github.com/docker/go-metrics v0.0.1 // indirect
@@ -31,8 +32,13 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/garyburd/redigo v1.6.0 // indirect
+	github.com/go-openapi/errors v0.19.2
 	github.com/go-openapi/inflect v0.19.0
+	github.com/go-openapi/runtime v0.19.4
 	github.com/go-openapi/spec v0.19.4
+	github.com/go-openapi/strfmt v0.19.3
+	github.com/go-openapi/swag v0.19.5
+	github.com/go-openapi/validate v0.19.5
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/google/gofuzz v1.1.0

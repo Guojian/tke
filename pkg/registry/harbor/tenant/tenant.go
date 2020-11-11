@@ -19,12 +19,14 @@
 package tenant
 
 import (
+	"context"
 	"fmt"
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 
+	"tkestack.io/tke/pkg/registry/harbor/handler"
 	utilregistryrequest "tkestack.io/tke/pkg/registry/util/request"
 )
 
@@ -49,7 +51,10 @@ type tenant struct {
 
 func (t *tenant) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	originalPath := r.URL.Path
+	ctx := r.Context()
 	tenant := utilregistryrequest.TenantID(r, t.domainSuffix, t.defaultTenant)
+	ctx = context.WithValue(ctx, handler.HarborContextKey("tenantID"), tenant)
+	r = r.WithContext(ctx)
 	if strings.HasPrefix(originalPath, t.registryPrefix) && !strings.HasPrefix(originalPath, fmt.Sprintf("/v2/%s/", CrossTenantNamespace)) {
 		var match mux.RouteMatch
 		if matched := t.router.Match(r, &match); matched {

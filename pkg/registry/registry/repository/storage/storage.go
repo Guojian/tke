@@ -20,6 +20,8 @@ package storage
 
 import (
 	"context"
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metainternal "k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +33,8 @@ import (
 	registryapi "tkestack.io/tke/api/registry"
 	"tkestack.io/tke/pkg/apiserver/authentication"
 	apiserverutil "tkestack.io/tke/pkg/apiserver/util"
+	harbor "tkestack.io/tke/pkg/registry/harbor/client"
+	harborHandler "tkestack.io/tke/pkg/registry/harbor/handler"
 	repositorystrategy "tkestack.io/tke/pkg/registry/registry/repository"
 	registryutil "tkestack.io/tke/pkg/registry/util"
 	"tkestack.io/tke/pkg/util/log"
@@ -43,7 +47,7 @@ type Storage struct {
 }
 
 // NewStorage returns a Storage object that will work against repositories.
-func NewStorage(optsGetter genericregistry.RESTOptionsGetter, registryClient *registryinternalclient.RegistryClient, privilegedUsername string) *Storage {
+func NewStorage(optsGetter genericregistry.RESTOptionsGetter, registryClient *registryinternalclient.RegistryClient, privilegedUsername string, harborClient *harbor.APIClient) *Storage {
 	strategy := repositorystrategy.NewStrategy(registryClient)
 	store := &registry.Store{
 		NewFunc:                  func() runtime.Object { return &registryapi.Repository{} },
@@ -71,7 +75,7 @@ func NewStorage(optsGetter genericregistry.RESTOptionsGetter, registryClient *re
 	statusStore.ExportStrategy = repositorystrategy.NewStatusStrategy(strategy)
 
 	return &Storage{
-		Repository: &REST{store, privilegedUsername},
+		Repository: &REST{store, privilegedUsername, harborClient},
 		Status:     &StatusREST{&statusStore},
 	}
 }
@@ -108,6 +112,7 @@ func ValidateExportObjectAndTenantID(ctx context.Context, store *registry.Store,
 type REST struct {
 	*registry.Store
 	privilegedUsername string
+	harborClient       *harbor.APIClient
 }
 
 var _ rest.ShortNamesProvider = &REST{}
@@ -156,9 +161,23 @@ func (r *REST) Update(ctx context.Context, name string, objInfo rest.UpdatedObje
 
 // Delete enforces life-cycle rules for cluster termination
 func (r *REST) Delete(ctx context.Context, name string, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions) (runtime.Object, bool, error) {
-	_, err := ValidateGetObjectAndTenantID(ctx, r.Store, name, &metav1.GetOptions{})
+	obj, err := ValidateGetObjectAndTenantID(ctx, r.Store, name, &metav1.GetOptions{})
 	if err != nil {
 		return nil, false, err
+	}
+	if r.harborClient != nil {
+		o := obj.(*registryapi.Repository)
+		_, tenantID := authentication.UsernameAndTenantID(ctx)
+
+		err := harborHandler.DeleteRepo(
+			ctx,
+			r.harborClient,
+			fmt.Sprintf("%s-image-%s", tenantID, o.Spec.NamespaceName),
+			o.Spec.Name,
+		)
+		if err != nil {
+			return nil, false, err
+		}
 	}
 	return r.Store.Delete(ctx, name, deleteValidation, options)
 }
