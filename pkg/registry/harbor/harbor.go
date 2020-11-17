@@ -41,7 +41,9 @@ import (
 // ChartPrefix defines the path prefix for accessing the helm chart server
 const RegistryPrefix = "/v2/"
 const AuthPrefix = "/service/"
+const ChartAPIPrefix = "/api/chartrepo/"
 const ChartPrefix = "/chartrepo/"
+const CompatibleChartPrefix = "/chart/"
 
 type Options struct {
 	RegistryConfig       *registryconfig.RegistryConfiguration
@@ -56,6 +58,7 @@ func IgnoreAuthPathPrefixes() []string {
 		RegistryPrefix,
 		AuthPrefix,
 		ChartPrefix,
+		ChartAPIPrefix,
 	}
 }
 
@@ -69,11 +72,13 @@ func RegisterRoute(m *mux.PathRecorderMux, opts *Options) error {
 		return err
 	}
 
-	wrappedHandler := tenant.WithTenant(harborHandler, RegistryPrefix, AuthPrefix, ChartPrefix, opts.RegistryConfig.DomainSuffix, opts.RegistryConfig.DefaultTenant)
+	wrappedHandler := tenant.WithTenant(harborHandler, RegistryPrefix, AuthPrefix, ChartPrefix, CompatibleChartPrefix, ChartAPIPrefix, opts.RegistryConfig.DomainSuffix, opts.RegistryConfig.DefaultTenant)
 
 	m.HandlePrefix(RegistryPrefix, wrappedHandler)
 	m.HandlePrefix(AuthPrefix, wrappedHandler)
 	m.HandlePrefix(ChartPrefix, wrappedHandler)
+	m.HandlePrefix(ChartAPIPrefix, wrappedHandler)
+	m.HandlePrefix(CompatibleChartPrefix, wrappedHandler)
 
 	return nil
 }
